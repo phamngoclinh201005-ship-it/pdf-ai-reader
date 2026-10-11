@@ -1,0 +1,19 @@
+{
+  "devDependencies": {
+    "@types/node": "^26.6.5"
+  },
+  "dependencies": {
+    "@google/genai": "^2.28.0"
+  },
+  "name": "paperflow-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix pdf-ai-reader run dev",
+    "dev:backend": "dotnet run --project backend/PaperFlow.Api",
+    "build": "npm --prefix pdf-ai-reader run build",
+    "build:backend": "dotnet build backend/PaperFlow.Api",
+    "typecheck": "npm --prefix pdf-ai-reader run typecheck",
+    "test": "npm --prefix pdf-ai-reader test",
+    "test:smoke": "npm --prefix pdf-ai-reader run test:smoke"
+  }
+}

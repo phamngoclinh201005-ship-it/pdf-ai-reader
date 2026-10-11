@@ -1,0 +1,28 @@
+{
+  "name": "pdf-ai-reader",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "node scripts/start.mjs",
+    "start": "node scripts/start.mjs",
+    "typecheck": "nuxt typecheck",
+    "test": "node --test tests/*.test.mjs",
+    "test:smoke": "node tests/api-smoke.mjs"
+  },
+  "dependencies": {
+    "@floating-ui/dom": "^1.7.2",
+    "@google/genai": "^2.28.0",
+    "@iconify-json/lucide": "^1.2.142",
+    "@nuxt/ui": "^2.22.3",
+    "gsap": "^3.15.0",
+    "nuxt": "^3.17.5",
+    "pdfjs-dist": "^4.10.38",
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vue-tsc": "^3.3.13"
+  }
+}

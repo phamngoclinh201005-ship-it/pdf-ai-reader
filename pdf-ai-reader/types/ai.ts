@@ -1,0 +1,12 @@
+/** Contracts for the same-origin Nuxt AI endpoints. */
+export interface DocumentPage { page: number; text: string }
+export type AiMode = 'translate' | 'explain' | 'summarize'
+export interface ChatMessage { role: 'user' | 'assistant'; text: string }
+export interface PdfChatRequest {
+  question: string
+  pages: DocumentPage[]
+  history?: ChatMessage[]
+  selection?: string
+}
+export interface PdfChatResponse { result: string; sources: number[] }
+export interface TranslationResponse { result: string; mode: AiMode }

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="edge" x2="1" y2="1"><stop stop-color="#d45eff"/><stop offset=".5" stop-color="#5036ee"/><stop offset="1" stop-color="#38d8ff"/></linearGradient>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f8caff"/><stop offset=".45" stop-color="#8862ff"/><stop offset="1" stop-color="#64dbff"/></linearGradient>
+    <linearGradient id="orbit"><stop stop-color="#f69af7"/><stop offset=".45" stop-color="#ab71ff"/><stop offset="1" stop-color="#65eeff"/></linearGradient>
+    <linearGradient id="fold" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#bebfff"/></linearGradient>
+  </defs>
+  <rect x="3" y="3" width="122" height="122" rx="29" fill="#0c0b37" stroke="url(#edge)" stroke-width="2"/>
+  <path d="M22 80C-3 118 83 108 111 64c19-33-10-22-17-18 40-9 15 30-7 42-29 20-68 23-65-8Z" fill="url(#orbit)" opacity=".55"/>
+  <g transform="rotate(-12 65 64)">
+    <rect x="30" y="32" width="57" height="76" rx="10" fill="#6e38d2" stroke="#ad71fb"/>
+    <path d="M49 23h29l19 24v41c0 6-4 9-10 9H49c-6 0-10-4-10-10V33c0-6 4-10 10-10Z" fill="url(#paper)" stroke="#e5c9ff" stroke-width="1.2"/>
+    <path d="m78 23 19 24H85c-5 0-7-3-7-8Z" fill="url(#fold)"/>
+    <path d="M52 47h19M52 60h28M52 74h15" stroke="#f7e6ff" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <path d="M18 69c-12 23 36 22 68 3 18-11 30-26 23-33 22 10-6 33-25 44-33 19-87 25-66-14Z" fill="url(#orbit)"/>
+  <path d="m102 18 3 9 9 3-9 3-3 9-3-9-9-3 9-3Z" fill="#f7c6ff"/>
+</svg>

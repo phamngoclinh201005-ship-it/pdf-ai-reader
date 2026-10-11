@@ -12,9 +12,13 @@ export default defineNuxtConfig({
     geminiApiKey: process.env.GEMINI_API_KEY || '',
     geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE
-        || 'http://localhost:5050',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '',
     },
+  },
+
+  routeRules: {
+    '/api/auth/**': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/auth/**` },
+    '/api/health': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/health` },
   },
 
   app: {

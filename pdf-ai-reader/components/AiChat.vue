@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { DocumentPage } from '~/types/ai'
+import type { SavedMessage } from '~/types/library'
 const { askPdf } = usePdfChat()
 const props = defineProps<{ pages: DocumentPage[]; fileName: string; documentId: number; indexing: boolean; limited: boolean; selection: string }>()
 const emit = defineEmits<{ close: []; navigate: [page: number]; clearSelection: []; requestSave: [] }>()
-interface Message { role: 'user' | 'assistant'; text: string; citations?: number[] }
-const messages = ref<Message[]>([])
+const messages = defineModel<SavedMessage[]>('messages', { default: () => [] })
 const question = ref('')
 const pending = ref(false)
 const error = ref('')

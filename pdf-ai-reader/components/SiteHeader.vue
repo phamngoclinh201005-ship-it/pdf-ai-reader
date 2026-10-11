@@ -33,7 +33,7 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
         <button class="theme-button" type="button" :aria-label="darkHeader ? 'Giao diện sáng' : 'Giao diện tối'" @click="toggleTheme"><UIcon :name="darkHeader ? 'i-lucide-moon' : 'i-lucide-sun'" /></button>
         <span v-if="loading && !user" class="session-check" role="status">Đang kiểm tra phiên…</span>
         <details v-else-if="user" class="account-menu"><summary><span class="account-avatar">{{ initials }}</span><span class="account-name">{{ user.displayName }}</span><UIcon name="i-lucide-chevron-down" /></summary><div class="account-popover"><span class="account-email">{{ user.email }}</span><NuxtLink to="/workspace">My Workspace</NuxtLink><NuxtLink to="/library">My Library</NuxtLink><NuxtLink to="/settings">Account Settings</NuxtLink><NuxtLink v-if="user.role === 'Admin'" to="/admin">Admin</NuxtLink><button :disabled="signingOut" @click="signOut">{{ signingOut ? 'Đang đăng xuất…' : 'Logout' }}</button><p v-if="error" role="alert">{{ error }}</p></div></details>
-        <template v-else><NuxtLink to="/login" class="header-login">Log in</NuxtLink><NuxtLink to="/register" class="header-start">Get Started <UIcon name="i-lucide-circle-arrow-right" /></NuxtLink></template>
+        <template v-else><NuxtLink to="/login" class="header-login">Log in</NuxtLink><NuxtLink to="/reader" class="header-start" aria-label="Get Started - dùng thử không đăng nhập">Get Started <UIcon name="i-lucide-circle-arrow-right" /></NuxtLink></template>
       </div>
     </div>
   </header>

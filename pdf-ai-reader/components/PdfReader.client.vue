@@ -3,7 +3,10 @@ import { computePosition, flip, shift, offset, autoUpdate } from '@floating-ui/d
 const { user, logout } = useAuth()
 const saveOpen = ref(false)
 const saveAction = ref('lưu tài liệu')
-function requestSave(action = 'lưu tài liệu') { saveAction.value = action; saveOpen.value = true }
+function requestSave(action = 'lưu tài liệu') {
+  if (user.value) { void persistence.sync(); return }
+  saveAction.value = action; saveOpen.value = true
+}
 const signingOut = ref(false)
 const signOutError = ref('')
 async function signOut() {
@@ -19,6 +22,9 @@ const scroller = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const popupEl = ref<HTMLElement | null>(null)
 const { fileName, fileSize, pageCount, activePage, zoom, busy, indexing, indexedCount, limited, error: pdfError, documentId, pages, dimensions, setHost, loadFile, goToPage, setZoom, fitWidth, trackPage } = usePdfDocument(scroller)
+const persistence = useReadingPersistence({ page: activePage, zoom, count: pageCount, load: loadFile, navigate: page => goToPage(page, 'auto'), setZoom })
+const { messages: chatMessages, actions: savedActions, status: saveStatus, error: saveError, saving: isSaving } = persistence
+const historyOpen = ref(false)
 const colorMode = useColorMode()
 const leftOpen = ref(false)
 const rightOpen = ref(true)
@@ -49,9 +55,11 @@ watch(documentId, () => { closePopup(); chatSelection.value = ''; leftOpen.value
 watch(zoom, closePopup)
 function toggleTheme() { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }
 async function openFile(file?: File) {
-  if (!file || busy.value) return
+  if (!file || busy.value || persistence.saving.value) return
+  persistence.prepare(file)
   openingFileName.value = file.name
   await loadFile(file)
+  if (pageCount.value && !pdfError.value) await persistence.opened(file)
 }
 function pickFile(event: Event) { const target = event.target as HTMLInputElement; void openFile(target.files?.[0]); target.value = '' }
 function drop(event: DragEvent) { dragging.value = false; void openFile(event.dataTransfer?.files?.[0]) }
@@ -97,7 +105,10 @@ async function runAction(mode: typeof action.value) {
   action.value = mode; aiPending.value = true; aiError.value = ''; result.value = ''
   try {
     const response = await processText(selectedText.value, mode, controller.signal)
-    if (id === requestVersion) result.value = response
+    if (id === requestVersion) {
+      result.value = response
+      savedActions.value.push({ mode, source: selectedText.value, result: response, page: activePage.value })
+    }
   } catch (err: any) { if (id === requestVersion) aiError.value = err?.data?.data?.message || 'Không thể nhận phản hồi AI. Hãy thử lại.' }
   finally { if (id === requestVersion) { aiPending.value = false; await nextTick(); await positionPopup() } }
 }
@@ -124,11 +135,13 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="workspace flex flex-col bg-white text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+    <UModal v-model="historyOpen"><section class="pf-card max-h-[80dvh] overflow-auto"><div class="mb-5 flex items-center justify-between"><h2 class="text-xl font-bold">Lịch sử AI</h2><UButton icon="i-lucide-x" color="gray" variant="ghost" aria-label="Đóng lịch sử" @click="historyOpen = false" /></div><p v-if="!savedActions.length" class="pf-muted text-sm">Chưa có bản dịch hoặc giải thích nào.</p><article v-for="(entry, i) in savedActions" :key="i" class="mb-5 border-b border-[var(--pf-border)] pb-5"><p class="pf-link text-xs font-semibold">{{ entry.mode }} · Trang {{ entry.page }}</p><blockquote class="pf-muted mt-2 whitespace-pre-wrap break-words text-xs">{{ entry.source }}</blockquote><p class="mt-3 whitespace-pre-wrap break-words text-sm leading-7">{{ entry.result }}</p></article></section></UModal>
+    <p v-if="saveError" role="alert" class="border-b border-rose-500/20 bg-rose-500/10 px-4 py-2 text-xs text-rose-500">{{ saveError }}</p>
     <SaveInvitation :open="saveOpen" :authenticated="!!user" :action="saveAction" @close="saveOpen = false" />
     <input ref="fileInput" type="file" accept="application/pdf,.pdf" class="hidden" @change="pickFile" />
     <header class="panel z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b px-4 lg:px-6">
       <div class="flex min-w-0 items-center gap-3"><UButton icon="i-lucide-panel-left" color="gray" variant="ghost" class="lg:hidden" aria-label="Mở danh sách trang" @click="leftOpen = !leftOpen" /><NuxtLink to="/" class="flex shrink-0 items-center gap-2 text-lg font-bold tracking-tight" aria-label="PaperFlow"><img src="/favicon.svg" width="34" height="34" alt="" /><span class="hidden sm:inline">PaperFlow</span></NuxtLink><span class="hidden border-l border-slate-200 pl-4 text-xs text-slate-400 dark:border-slate-700 md:block">Không gian đọc thông minh</span></div>
-      <div class="flex items-center gap-2"><UBadge v-if="!user" color="primary" variant="soft" class="hidden sm:inline-flex">Guest Session</UBadge><span v-else class="hidden max-w-28 truncate text-xs text-slate-500 sm:inline" :title="user.email">{{ user.displayName }}</span><NuxtLink v-if="!user" to="/login" class="text-xs text-violet-500">Log in</NuxtLink><NuxtLink v-else to="/library" class="hidden text-xs text-violet-500 sm:inline">My Library</NuxtLink><NuxtLink v-if="user?.role === 'Admin'" to="/admin" class="text-xs font-medium text-violet-500">Admin</NuxtLink><UButton v-if="user" icon="i-lucide-log-out" color="gray" variant="ghost" aria-label="Logout" :loading="signingOut" @click="signOut" /><UButton :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'" color="gray" variant="ghost" aria-label="Đổi giao diện sáng tối" @click="toggleTheme" /><UButton icon="i-lucide-messages-square" color="gray" variant="ghost" aria-label="Mở hoặc đóng trợ lý AI" :aria-expanded="rightOpen" @click="rightOpen = !rightOpen" /><UButton icon="i-lucide-cloud-upload" color="gray" variant="ghost" aria-label="Save to Library" @click="requestSave()" /><UButton icon="i-lucide-refresh-cw" color="gray" variant="ghost" aria-label="Sync" @click="requestSave('đồng bộ dữ liệu')" /><UButton icon="i-lucide-plus" size="sm" :disabled="busy" @click="fileInput?.click()"><span class="hidden sm:inline">Mở PDF</span></UButton></div>
+      <div class="flex items-center gap-1 sm:gap-2"><UBadge v-if="!user" color="primary" variant="soft" class="hidden sm:inline-flex">Guest Session</UBadge><span v-else class="hidden max-w-28 truncate text-xs text-slate-500 sm:inline" :title="user.email">{{ user.displayName }}</span><NuxtLink v-if="!user" to="/login" class="text-xs text-violet-500">Log in</NuxtLink><NuxtLink v-else to="/library" class="hidden text-xs text-violet-500 sm:inline">My Library</NuxtLink><NuxtLink v-if="user?.role === 'Admin'" to="/admin" class="hidden text-xs font-medium text-violet-500 sm:inline">Admin</NuxtLink><UButton v-if="user" icon="i-lucide-log-out" color="gray" variant="ghost" aria-label="Logout" :loading="signingOut" @click="signOut" /><UButton :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'" color="gray" variant="ghost" aria-label="Đổi giao diện sáng tối" @click="toggleTheme" /><UButton icon="i-lucide-messages-square" color="gray" variant="ghost" aria-label="Mở hoặc đóng trợ lý AI" :aria-expanded="rightOpen" @click="rightOpen = !rightOpen" /><UButton icon="i-lucide-history" color="gray" variant="ghost" aria-label="Lịch sử AI" @click="historyOpen = true" /><UButton v-if="user" to="/library" icon="i-lucide-folder-heart" color="gray" variant="ghost" class="sm:hidden" aria-label="My Library" /><UButton :class="user ? 'hidden sm:inline-flex' : ''" icon="i-lucide-cloud-upload" color="gray" variant="ghost" aria-label="Save to Library" @click="requestSave()" /><UButton class="hidden sm:inline-flex" icon="i-lucide-refresh-cw" color="gray" variant="ghost" aria-label="Sync" @click="requestSave('đồng bộ dữ liệu')" /><UButton icon="i-lucide-plus" size="sm" :disabled="busy || isSaving" @click="fileInput?.click()"><span class="hidden sm:inline">Mở PDF</span></UButton></div>
     </header>
     <div class="relative flex min-h-0 flex-1">
       <button v-if="leftOpen" class="fixed inset-0 top-16 z-30 bg-slate-950/40 lg:hidden" aria-label="Đóng danh sách trang" @click="leftOpen = false" />
@@ -149,10 +162,10 @@ onBeforeUnmount(() => {
           <div v-else class="flex w-max min-w-full flex-col items-center gap-6 p-6"><div v-for="(size, i) in dimensions" :key="`${documentId}-${i}`"><div :ref="el => setHost(i + 1, el)" :data-page="i + 1" class="pdf-page overflow-hidden rounded-sm" :style="{ width: size.width * zoom + 'px', height: size.height * zoom + 'px' }" /><p class="mt-2 text-center text-[10px] tabular-nums text-slate-400">{{ i + 1 }} / {{ pageCount }}</p></div></div>
           <div v-if="busy && pageCount" class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm dark:bg-slate-950/70"><div class="flex items-center gap-3 rounded-xl bg-white px-5 py-4 text-sm shadow-lg dark:bg-slate-800"><UIcon name="i-lucide-loader-circle" class="size-5 animate-spin text-violet-500" />Đang chuẩn bị tài liệu…</div></div>
         </div>
-        <footer class="panel flex h-8 shrink-0 items-center justify-between border-t px-4 text-[10px] text-slate-400"><span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-emerald-500" />{{ !user ? 'Guest Session · ' : '' }}{{ indexing ? `Đang đọc trang ${indexedCount}/${pageCount} cho AI…` : 'Cuộn liên tục' }}</span><span>{{ pageCount ? 'Bôi đen văn bản để mở công cụ AI' : 'Không gian của bạn. Nhịp đọc của bạn.' }}</span></footer>
+        <footer class="panel flex h-8 shrink-0 items-center justify-between border-t px-4 text-[10px] text-slate-400"><span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-emerald-500" />{{ !user ? 'Guest Session · ' : saveStatus ? saveStatus + ' · ' : 'Member · ' }}{{ indexing ? `Đang đọc trang ${indexedCount}/${pageCount} cho AI…` : 'Cuộn liên tục' }}</span><span>{{ pageCount ? 'Bôi đen văn bản để mở công cụ AI' : 'Không gian của bạn. Nhịp đọc của bạn.' }}</span></footer>
       </main>
       <button v-if="rightOpen" class="fixed inset-0 top-16 z-30 bg-slate-950/40 xl:hidden" aria-label="Đóng trợ lý AI" @click="rightOpen = false" />
-      <aside v-show="rightOpen" class="z-40 w-[360px] shrink-0 max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:max-w-[calc(100vw-24px)]"><AiChat :pages="pages" :file-name="fileName" :document-id="documentId" :indexing="indexing" :limited="limited" :selection="chatSelection" @close="rightOpen = false" @navigate="navigate" @clear-selection="chatSelection = ''" @request-save="requestSave('lưu lịch sử chat')" /></aside>
+      <aside v-show="rightOpen" class="z-40 w-[360px] shrink-0 max-xl:absolute max-xl:inset-y-0 max-xl:right-0 max-xl:max-w-[calc(100vw-24px)]"><AiChat v-model:messages="chatMessages" :pages="pages" :file-name="fileName" :document-id="documentId" :indexing="indexing" :limited="limited" :selection="chatSelection" @close="rightOpen = false" @navigate="navigate" @clear-selection="chatSelection = ''" @request-save="requestSave('lưu lịch sử chat')" /></aside>
     </div>
     <Teleport to="body"><div v-if="popupVisible" ref="popupEl" class="fixed z-50 max-w-[calc(100vw-24px)] rounded-2xl border border-slate-200 bg-white p-2 text-slate-800 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" :style="{ left: popupX + 'px', top: popupY + 'px' }" @pointerdown.stop.prevent>
       <div class="flex flex-wrap items-center gap-1"><UButton icon="i-lucide-languages" color="gray" variant="ghost" size="xs" :loading="aiPending && action === 'translate'" @click="runAction('translate')">Dịch</UButton><UButton icon="i-lucide-lightbulb" color="gray" variant="ghost" size="xs" :loading="aiPending && action === 'explain'" @click="runAction('explain')">Giải thích</UButton><UButton icon="i-lucide-list-filter" color="gray" variant="ghost" size="xs" :loading="aiPending && action === 'summarize'" @click="runAction('summarize')">Tóm tắt</UButton><UButton icon="i-lucide-message-circle" variant="soft" size="xs" @click="askSelection">Hỏi AI</UButton><UButton :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'" color="gray" variant="ghost" size="xs" aria-label="Sao chép văn bản" @click="copyText" /><UButton icon="i-lucide-x" color="gray" variant="ghost" size="xs" aria-label="Đóng công cụ AI" @click="closePopup" /></div>

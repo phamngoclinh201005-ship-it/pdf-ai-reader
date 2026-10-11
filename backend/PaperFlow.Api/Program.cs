@@ -22,8 +22,10 @@ builder.Services.AddControllers();
 builder.Services.AddSingleton<AuthStore>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordResetService>();
+builder.Services.AddSingleton<LibraryStore>();
 
 // Resend Email
+builder.Services.AddScoped<GmailEmailService>();
 builder.Services.AddHttpClient<ResendEmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(15);
@@ -106,11 +108,12 @@ await app.Services
     .EnsureIndexesAsync();
 
 app.UseCors("NuxtFrontend");
+await app.Services.GetRequiredService<LibraryStore>().EnsureIndexesAsync();
 
 // Origin protection
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/api/auth") &&
+    if ((context.Request.Path.StartsWithSegments("/api/auth") || context.Request.Path.StartsWithSegments("/api/library")) &&
         !HttpMethods.IsGet(context.Request.Method) &&
         !HttpMethods.IsOptions(context.Request.Method))
     {

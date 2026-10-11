@@ -12,9 +12,9 @@ Không tự upload PDF, tạo bản ghi MongoDB hoặc lưu PDF/chat/bản dịc
 Reload hoặc đóng trang sẽ mất phiên đọc tạm. Thiết lập theme/cookie đăng nhập và metadata OTP
 không phải dữ liệu PDF; cơ chế auth/OTP hiện có vẫn được giữ nguyên.
 
-Save to Library, Save Chat History và Sync mở modal thay vì ép đăng nhập.
-Guest có thể chọn Create Account hoặc Maybe Later để tiếp tục đọc.
-Người đã đăng nhập nhận thông báo rằng lưu trữ/đồng bộ đang được phát triển.
+Guest: Save to Library, Save Chat History và Sync mở lời mời tạo tài khoản/đăng nhập; có thể tiếp tục dùng thử.
+Account: PDF, vị trí đọc, chat và kết quả AI tự lưu và khôi phục từ MongoDB. My Library cho phép đọc tiếp và xóa tài liệu.
+Get Started mở reader khách; Log in mở luồng tài khoản. Xem [chi tiết lưu trữ](library.md).
 
 ## Route và phiên đăng nhập
 
@@ -34,15 +34,12 @@ Logout thu hồi phiên backend và cập nhật header về Guest.
 
 ## Phạm vi cá nhân hóa
 
-`/library` hiện là trang thông báo trạng thái phát triển, không tạo danh sách tài liệu giả.
+`/library` hiển thị PDF thật của tài khoản, hỗ trợ đọc tiếp và xóa.
 `/settings` hiển thị hồ sơ thực từ session ở chế độ chỉ đọc.
-Chưa có API upload/quản lý PDF riêng tư, lưu lịch sử theo owner, đồng bộ, hoặc đổi hồ sơ/mật khẩu.
-Tính năng Guest và Workspace hiện vẫn hoạt động trong bộ nhớ phiên.
-
-Bước tiếp theo: thêm các API thư viện được xác thực, lấy owner từ session server,
-lưu file bên ngoài static web root, kiểm tra signature/MIME/40 MB, và lọc owner trong mọi
-truy vấn download/rename/delete. Không nhận ownerId từ frontend. Lịch sử, ghi chú và
-bản dịch cần gắn user/document thực và kiểm tra quyền sở hữu cùng cách.
+Guest chỉ giữ dữ liệu trong bộ nhớ; reload sẽ mất PDF/chat/kết quả AI.
+Workspace lưu PDF, trang đọc, zoom, chat và lịch sử AI vào MongoDB theo tài khoản.
+API lấy owner từ session server và kiểm tra quyền trong mọi truy vấn.
+Chi tiết giới hạn, API và cấu hình Render: [library.md](library.md).
 
 ## Bảo vệ API công khai
 

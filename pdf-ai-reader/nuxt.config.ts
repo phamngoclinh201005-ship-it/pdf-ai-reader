@@ -3,6 +3,8 @@ import { defineNuxtConfig } from 'nuxt/config';
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
+  buildDir: process.env.NUXT_BUILD_DIR || '.nuxt',
+  ...(process.env.NUXT_BUILD_DIR ? { vite: { cacheDir: `${process.env.NUXT_BUILD_DIR}/cache/vite` } } : {}),
 
   modules: ['@nuxt/ui'],
 
@@ -17,6 +19,8 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
+    '/api/library': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/library` },
+    '/api/library/**': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/library/**` },
     '/api/auth/**': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/auth/**` },
     '/api/health': { proxy: `${process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com'}/api/health` },
   },

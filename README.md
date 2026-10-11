@@ -92,5 +92,5 @@ Xem [hướng dẫn authentication](docs/authentication.md) để cấu hình OT
 
 Landing có preview tương tác, animation và favicon SVG theo mẫu thiết kế.
 Guest đọc PDF, dịch và chat trong bộ nhớ phiên; không tự upload hoặc lưu nội dung.
-Save/Sync mở modal; thư viện riêng và lưu lịch sử vẫn ở trạng thái đang phát triển.
+Khách giữ PDF/chat/kết quả AI trong bộ nhớ, reload sẽ mất. Tài khoản đăng nhập tự lưu và khôi phục qua API thư viện MongoDB riêng theo chủ sở hữu.
 Xem [luồng Guest/Account và danh sách file](docs/landing-and-guest-mode.md).

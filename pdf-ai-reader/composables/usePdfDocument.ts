@@ -184,10 +184,10 @@ export function usePdfDocument(scroller: Ref<HTMLElement | null>) {
       if (id === documentId.value) { error.value = 'Không mở được PDF. Kiểm tra file, mật khẩu hoặc giới hạn 2000 trang.'; pageCount.value = 0 }
     } finally { if (id === documentId.value) busy.value = false }
   }
-  function goToPage(n: number) {
+  function goToPage(n: number, behavior: ScrollBehavior = 'smooth') {
     if (n < 1 || n > pageCount.value) return
     activePage.value = n
-    hosts.get(n)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'center' })
+    hosts.get(n)?.scrollIntoView({ behavior, block: 'start', inline: 'center' })
   }
   function setZoom(value: number, fitting = false) {
     fitMode = fitting

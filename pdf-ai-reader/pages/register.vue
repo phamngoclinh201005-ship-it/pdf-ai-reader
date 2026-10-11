@@ -22,7 +22,7 @@ async function submit() {
       <p class="text-sm pf-muted">Tạo tài khoản để truy cập không gian đọc PaperFlow.</p>
       <label class="block text-sm">Tên hiển thị<input v-model="form.displayName" required minlength="2" maxlength="80" class="pf-input" placeholder="Tên của bạn" /></label>
       <label class="block text-sm">Email<input v-model="form.email" type="email" required class="pf-input" placeholder="you@example.com" /></label>
-      <label class="block text-sm">Mật khẩu<input v-model="form.password" type="password" required minlength="12" maxlength="128" class="pf-input" placeholder="Ít nhất 12 ký tự" /></label>
+      <PasswordInput v-model="form.password" label="Mật khẩu" :disabled="busy" placeholder="Ít nhất 8 ký tự" />
       <p v-if="error" role="alert" class="text-sm text-red-600">{{ error }}</p>
       <button :disabled="busy" class="pf-button w-full">{{ busy ? 'Đang xử lý...' : 'Đăng ký' }}</button>
       <p class="text-center text-sm">Đã có tài khoản? <NuxtLink :to="{ path: '/login', query: { redirect: destination } }" class="pf-link">Đăng nhập</NuxtLink></p>

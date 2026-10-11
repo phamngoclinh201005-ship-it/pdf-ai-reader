@@ -15,7 +15,7 @@ public class AuthService(AuthStore db, IConfiguration config, ResendEmailService
         {
             var secret = config["Auth:OtpSecret"];
             if (string.IsNullOrWhiteSpace(secret) || secret.Length < 32)
-                throw new InvalidOperationException("Auth:OtpSecret must contain at least 32 characters");
+                throw new AuthConfigurationException("Auth:OtpSecret must contain at least 32 characters");
             return secret;
         }
     }
@@ -30,6 +30,8 @@ public class AuthService(AuthStore db, IConfiguration config, ResendEmailService
 
     public async Task<OtpTiming> RegisterAsync(RegisterRequest request, CancellationToken ct)
     {
+        _ = OtpSecret;
+        mail.ValidateConfiguration();
         string email = Normalize(request.Email);
         var existing = await db.Users.Find(x => x.Email == email).FirstOrDefaultAsync(ct);
         if (existing is { EmailVerified: true }) return GenericTiming(); // Keep the response shape uniform.
@@ -46,6 +48,8 @@ public class AuthService(AuthStore db, IConfiguration config, ResendEmailService
 
     public async Task<OtpTiming> ResendOtpAsync(string email, CancellationToken ct)
     {
+        _ = OtpSecret;
+        mail.ValidateConfiguration();
         var user = await db.Users.Find(x => x.Email == Normalize(email)).FirstOrDefaultAsync(ct);
         return user is { EmailVerified: false } ? await SendOtpAsync(user, ct) : GenericTiming();
     }

@@ -8,9 +8,14 @@ namespace PaperFlow.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(AuthService auth, IConfiguration config, IWebHostEnvironment environment) : ControllerBase
+public class AuthController(AuthService auth, IConfiguration config, IWebHostEnvironment environment, ILogger<AuthController> logger) : ControllerBase
 {
     private string CookieName => config["Auth:CookieName"] ?? "paperflow_session";
+    private IActionResult ConfigurationUnavailable(AuthConfigurationException error)
+    {
+        logger.LogError("Authentication configuration unavailable: {Reason}", error.Message);
+        return StatusCode(503, new { message = "Máy chủ chưa cấu hình dịch vụ xác minh email. Vui lòng liên hệ quản trị viên." });
+    }
     private CookieOptions CookieOptions() => new()
     {
         HttpOnly = true, Secure = !environment.IsDevelopment() || Request.IsHttps,
@@ -26,6 +31,7 @@ public class AuthController(AuthService auth, IConfiguration config, IWebHostEnv
             var timing = await auth.RegisterAsync(body, ct);
             return Accepted(new { message = "Nếu email hợp lệ, mã xác minh sẽ được gửi.", timing });
         }
+        catch (AuthConfigurationException error) { return ConfigurationUnavailable(error); }
         catch (InvalidOperationException) { return StatusCode(502, new { message = "Không gửi được email xác minh. Kiểm tra cấu hình Resend." }); }
     }
     [EnableRateLimiting("auth")]
@@ -37,6 +43,7 @@ public class AuthController(AuthService auth, IConfiguration config, IWebHostEnv
             var timing = await auth.ResendOtpAsync(body.Email, ct);
             return Accepted(new { message = "Nếu tài khoản cần xác minh, mã sẽ được gửi.", timing });
         }
+        catch (AuthConfigurationException error) { return ConfigurationUnavailable(error); }
         catch (InvalidOperationException) { return StatusCode(502, new { message = "Không gửi được email xác minh." }); }
     }
     [EnableRateLimiting("auth")]

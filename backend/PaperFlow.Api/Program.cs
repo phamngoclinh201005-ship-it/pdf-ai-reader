@@ -21,6 +21,7 @@ builder.Services.AddControllers();
 // Authentication
 builder.Services.AddSingleton<AuthStore>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<PasswordResetService>();
 
 // Resend Email
 builder.Services.AddHttpClient<ResendEmailService>(client =>

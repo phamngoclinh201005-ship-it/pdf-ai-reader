@@ -1,5 +1,16 @@
 # PaperFlow Authentication v1 — ASP.NET Core 10 + MongoDB + Resend + Nuxt 3
 
+## Quên mật khẩu
+
+Liên kết trên màn login mở `/forgot-password`. Ba bước riêng: nhập email, xác minh OTP, nhập mật khẩu mới hai lần. Mật khẩu đăng ký và đặt lại cần 8–128 ký tự. Các ô mật khẩu có nút hiện/ẩn.
+
+- `POST /api/auth/forgot-password`: `{ email }`; trả thông báo chung cho cả email không tồn tại. Có cooldown gửi lại 60 giây.
+- `POST /api/auth/verify-password-reset`: `{ email, code }`; mã hết hạn sau 5 phút, tối đa 5 lần thử. Xác minh thành công cấp token ngẫu nhiên, chỉ giữ trong bộ nhớ của trang.
+- `POST /api/auth/reset-password`: `{ email, token, password }`; token gắn với email, được lưu dạng hash, hết hạn cùng yêu cầu OTP và chỉ dùng một lần.
+- Collection `password_resets` lưu hash HMAC của mã, tách khỏi `email_otps`, có unique index theo tài khoản và TTL theo hạn sử dụng.
+- Đổi mật khẩu thành công thu hồi tất cả session của tài khoản. Người dùng đăng nhập lại bằng mật khẩu mới.
+- Dùng cùng cấu hình `Resend` và `Auth:OtpSecret`. Với địa chỉ gửi thử Resend, giới hạn người nhận vẫn áp dụng như đăng ký.
+
 Bộ code đã được tích hợp vào PaperFlow. `/` hiện là landing public; `/reader` dùng trình đọc PDF ở Guest Mode. `/workspace`, `/library` và `/settings` yêu cầu đăng nhập. `/admin` kiểm tra quyền cả phía frontend và backend. Các route guard chạy trên server và trình duyệt; cookie phiên được chuyển tiếp khi Nuxt render server. Chi tiết: [Landing và Guest Mode](landing-and-guest-mode.md).
 
 Phần dưới giữ hướng dẫn cấu hình của bộ module gốc. Không cần sao chép file hoặc thay `Program.cs` nữa. DTO auth nằm trong `Contracts/AuthContracts.cs`, MongoDB records nằm trong `Models/AuthModels.cs`. MongoDB.Driver đang dùng bản 3.12.0.

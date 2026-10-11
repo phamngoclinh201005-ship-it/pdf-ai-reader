@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "npm --prefix pdf-ai-reader run dev",
     "dev:backend": "dotnet run --project backend/PaperFlow.Api",
+    "dev:backend:local": "node scripts/dev-backend.mjs",
     "build": "npm --prefix pdf-ai-reader run build",
     "build:backend": "dotnet build backend/PaperFlow.Api",
     "typecheck": "npm --prefix pdf-ai-reader run typecheck",

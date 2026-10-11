@@ -9,6 +9,7 @@ public class AuthStore
     public IMongoCollection<UserRecord> Users { get; }
     public IMongoCollection<EmailOtpRecord> Otps { get; }
     public IMongoCollection<SessionRecord> Sessions { get; }
+    public IMongoCollection<EmailOtpRecord> PasswordResets { get; }
 
     public AuthStore(IConfiguration config)
     {
@@ -17,9 +18,12 @@ public class AuthStore
         Users = db.GetCollection<UserRecord>("users");
         Otps = db.GetCollection<EmailOtpRecord>("email_otps");
         Sessions = db.GetCollection<SessionRecord>("sessions");
+        PasswordResets = db.GetCollection<EmailOtpRecord>("password_resets");
     }
     public async Task EnsureIndexesAsync()
     {
+        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }));
+        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }));
         await Users.Indexes.CreateOneAsync(new CreateIndexModel<UserRecord>(Builders<UserRecord>.IndexKeys.Ascending(x => x.Email), new CreateIndexOptions { Unique = true }));
         await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }));
         await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }));

@@ -5,6 +5,7 @@ const destination = computed(() => safeAuthRedirect(route.query.redirect))
 const { login } = useAuth()
 const email = ref('')
 const password = ref('')
+const showPassword = ref(false)
 const busy = ref(false)
 const error = ref('')
 const isOn = ref(false)
@@ -82,8 +83,9 @@ async function submit() {
         <div class="login-heading"><h1>Chào mừng<br />trở lại.</h1><p>Bật sáng không gian đọc của bạn.</p></div>
         <div class="inputs">
           <label class="input-wrap"><span class="sr-only">Email</span><span class="input-icon mail-icon" aria-hidden="true" /><input v-model="email" type="email" placeholder="Địa chỉ email" autocomplete="email" maxlength="254" :disabled="busy" required /></label>
-          <label class="input-wrap"><span class="sr-only">Mật khẩu</span><span class="input-icon lock-icon" aria-hidden="true" /><input v-model="password" type="password" placeholder="Mật khẩu" autocomplete="current-password" maxlength="128" :disabled="busy" required /></label>
+          <label class="input-wrap"><span class="sr-only">Mật khẩu</span><span class="input-icon lock-icon" aria-hidden="true" /><input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Mật khẩu" autocomplete="current-password" maxlength="128" :disabled="busy" required /><button type="button" class="password-eye" :disabled="busy" :aria-label="showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'" :aria-pressed="showPassword" @click="showPassword = !showPassword"><UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" /></button></label>
         </div>
+        <NuxtLink to="/forgot-password" class="verify-link">Quên mật khẩu?</NuxtLink>
         <p v-if="error" role="alert" class="login-error">{{ error }}</p>
         <button class="sign-in" type="submit" :disabled="busy">{{ busy ? 'Đang đăng nhập…' : 'Đăng nhập' }} <span v-if="!busy" aria-hidden="true">→</span></button>
         <div class="divider"><span /><b>KHÔNG GIAN ĐỌC CỦA BẠN</b><span /></div>
@@ -507,4 +509,5 @@ async function submit() {
 .sign-in { border-radius: 14px; color: #140b26; }
 .sign-in:hover { background: linear-gradient(105deg, #a477ff, #f8bbef); }
 .input-wrap input { border-radius: 12px; background: #08091880; }
+.password-eye { position: absolute; right: 5px; top: 5px; width: 44px; height: 44px; display: grid; place-items: center; color: #b1abc7; border-radius: 12px; }.input-wrap input { padding-right: 52px; }
 </style>

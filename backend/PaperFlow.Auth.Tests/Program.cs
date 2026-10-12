@@ -115,7 +115,19 @@ try
         Check(rules.All(rule => rule.IsValid("12345678")), "Eight-character password accepted");
         Check(rules.Any(rule => !rule.IsValid("1234567")), "Seven-character password rejected");
     }
-    Console.WriteLine("Auth checks passed, including password reset, cooldown, expiry, attempt limits, replay protection and session revocation.");
+    transport.FailDelivery = true;
+    try
+    {
+        await auth.RegisterAsync(new("delivery-failure@example.invalid", "Reader", password), default);
+        throw new Exception("Delivery failure must propagate");
+    }
+    catch (InvalidOperationException) { }
+    var failedUser = await store.Users.Find(x => x.Email == "delivery-failure@example.invalid").FirstAsync();
+    Check(await store.Otps.CountDocumentsAsync(x => x.UserId == failedUser.Id) == 0, "Unsent registration OTP is removed");
+    transport.FailDelivery = false;
+    await auth.ResendOtpAsync(failedUser.Email, default);
+    Check(await store.Otps.CountDocumentsAsync(x => x.UserId == failedUser.Id) == 1, "Retry after delivery failure works immediately");
+    Console.WriteLine("Auth checks passed, including delivery failure retry, password reset, cooldown, expiry, attempt limits, replay protection and session revocation.");
 }
 finally
 {
@@ -127,10 +139,13 @@ sealed class FakeMail(IConfiguration config) : IAuthEmailService
 {
     public string Code { get; private set; } = "";
     public int Sends { get; private set; }
+    public bool FailDelivery { get; set; }
     public void ValidateConfiguration() => new GmailEmailService(config).ValidateConfiguration();
     public Task SendOtpAsync(string email, string code, CancellationToken ct)
     {
-        ValidateConfiguration(); Code = code; Sends++; return Task.CompletedTask;
+        ValidateConfiguration();
+        if (FailDelivery) throw new InvalidOperationException("Fake delivery failure");
+        Code = code; Sends++; return Task.CompletedTask;
     }
     public Task SendPasswordResetAsync(string email, string code, CancellationToken ct) => SendOtpAsync(email, code, ct);
 }

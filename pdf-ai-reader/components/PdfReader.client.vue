@@ -109,7 +109,7 @@ async function runAction(mode: typeof action.value) {
       result.value = response
       savedActions.value.push({ mode, source: selectedText.value, result: response, page: activePage.value })
     }
-  } catch (err: any) { if (id === requestVersion) aiError.value = err?.data?.data?.message || 'Không thể nhận phản hồi AI. Hãy thử lại.' }
+  } catch (err: any) { if (id === requestVersion) aiError.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Không thể nhận phản hồi AI. Hãy thử lại.' }
   finally { if (id === requestVersion) { aiPending.value = false; await nextTick(); await positionPopup() } }
 }
 function askSelection() { chatSelection.value = selectedText.value; rightOpen.value = true; closePopup() }

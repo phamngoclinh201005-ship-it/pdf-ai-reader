@@ -48,7 +48,7 @@ async function send(value = question.value) {
     if (id === version) {
       messages.value.pop()
       question.value = text
-      error.value = err?.data?.data?.message || 'Không thể gửi câu hỏi. Vui lòng thử lại.'
+      error.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Không thể gửi câu hỏi. Vui lòng thử lại.'
     }
   } finally {
     if (id === version) { pending.value = false; await scrollBottom() }

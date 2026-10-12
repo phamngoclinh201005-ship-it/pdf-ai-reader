@@ -11,8 +11,8 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
-    geminiApiKey: process.env.GEMINI_API_KEY || '',
-    geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    geminiApiKey: process.env.NUXT_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '',
+    geminiModel: process.env.NUXT_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE ?? '',
     },

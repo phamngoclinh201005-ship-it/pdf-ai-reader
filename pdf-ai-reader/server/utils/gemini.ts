@@ -17,10 +17,10 @@ export async function generateAnswer(event: H3Event, instructions: string, conte
     return result!
   } catch (err: unknown) {
     const status = Number((err as { status?: number })?.status)
-    console.error('Gemini request failed', { status: status || 502 })
+    console.error('Gemini request failed', { status: status || 502, model: String(config.geminiModel) })
     if (status === 429) fail(429, 'Gemini đang giới hạn lượt gọi hoặc đã hết hạn mức. Hãy thử lại sau.')
     if (status === 401 || status === 403) fail(502, 'Gemini từ chối API key. Kiểm tra khóa và quyền truy cập model.')
-    if (status === 404) fail(502, 'Model Gemini không khả dụng. Kiểm tra GEMINI_MODEL trong .env.')
+    if (status === 404) fail(502, 'Model Gemini không khả dụng với cấu hình hiện tại. Kiểm tra NUXT_GEMINI_MODEL trên máy chủ FE rồi khởi động hoặc deploy lại.')
     fail(502, 'Không thể nhận phản hồi từ Gemini. Vui lòng thử lại.')
   }
 }

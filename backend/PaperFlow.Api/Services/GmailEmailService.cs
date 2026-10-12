@@ -4,7 +4,7 @@ using MimeKit;
 
 namespace PaperFlow.Api.Services;
 
-public class GmailEmailService(IConfiguration config) : IAuthEmailService
+public class GmailEmailService(IConfiguration config, ILogger<GmailEmailService>? logger = null) : IAuthEmailService
 {
     public void ValidateConfiguration()
     {
@@ -75,10 +75,13 @@ public class GmailEmailService(IConfiguration config) : IAuthEmailService
             await client.ConnectAsync(host, port, port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, timeout.Token);
             await client.AuthenticateAsync(username, password.Replace(" ", ""), timeout.Token);
             await client.SendAsync(message, timeout.Token);
+            logger?.LogInformation("Gmail SMTP accepted an authentication email for delivery.");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) when (ex is MailKit.CommandException or MailKit.ProtocolException or MailKit.Security.AuthenticationException or System.IO.IOException or System.Net.Sockets.SocketException or OperationCanceledException or System.Security.Authentication.AuthenticationException)
         {
+            logger?.LogWarning("Gmail SMTP delivery failed. Error type: {ErrorType}; SMTP status: {SmtpStatus}",
+                ex.GetType().Name, ex is SmtpCommandException smtpError ? smtpError.StatusCode.ToString() : "unavailable");
             throw new InvalidOperationException("Unable to send email via Gmail SMTP.");
         }
     }

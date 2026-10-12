@@ -17,6 +17,7 @@ export function usePdfDocument(scroller: Ref<HTMLElement | null>) {
   const error = ref('')
   const documentId = ref(0)
   const pages = shallowRef<DocumentPage[]>([])
+  const outline = shallowRef<{ title: string; page: number; depth: number }[]>([])
   const dimensions = shallowRef<{ width: number; height: number }[]>([])
   const hosts = new Map<number, HTMLElement>()
   const tasks = new Map<number, RenderTask>()
@@ -139,7 +140,7 @@ export function usePdfDocument(scroller: Ref<HTMLElement | null>) {
     observer?.disconnect()
     tasks.forEach(task => task.cancel())
     tasks.clear(); rendered.clear(); rendering.clear(); visible.clear()
-    busy.value = true; error.value = ''; pageCount.value = 0; pages.value = []; dimensions.value = []
+    busy.value = true; error.value = ''; pageCount.value = 0; pages.value = []; outline.value = []; dimensions.value = []
     indexedCount.value = 0; indexing.value = false; limited.value = false
     fileName.value = ''; activePage.value = 1
     const previous = pdf
@@ -168,6 +169,28 @@ export function usePdfDocument(scroller: Ref<HTMLElement | null>) {
       await nextTick()
       observe()
       void extract(doc, id)
+      void (async () => {
+        try {
+          const entries = await doc.getOutline()
+          const result: { title: string; page: number; depth: number }[] = []
+          let visited = 0
+          async function visit(items: NonNullable<typeof entries>, depth: number) {
+            for (const item of items) {
+              if (id !== documentId.value || ++visited > 200 || depth > 8) return
+              try {
+                const destination = typeof item.dest === 'string' ? await doc.getDestination(item.dest) : item.dest
+                if (destination?.[0] != null) {
+                  const index = typeof destination[0] === 'number' ? destination[0] : await doc.getPageIndex(destination[0])
+                  if (index >= 0 && index < doc.numPages) result.push({ title: item.title.slice(0, 200), page: index + 1, depth })
+                }
+              } catch { /* A malformed outline destination must not prevent reading. */ }
+              if (item.items?.length) await visit(item.items, depth + 1)
+            }
+          }
+          if (entries) await visit(entries, 0)
+          if (id === documentId.value) outline.value = result
+        } catch { /* PDFs without readable outlines still work normally. */ }
+      })()
       // Preserve each page's true size, including PDFs with mixed orientations.
       void (async () => {
         for (let n = 2; n <= doc.numPages; n++) {
@@ -218,5 +241,5 @@ export function usePdfDocument(scroller: Ref<HTMLElement | null>) {
     tasks.forEach(task => task.cancel())
     void loadingTask?.destroy(); void pdf?.destroy()
   })
-  return { fileName, fileSize, pageCount, activePage, zoom, busy, indexing, indexedCount, limited, error, documentId, pages, dimensions, setHost, loadFile, goToPage, setZoom, fitWidth, trackPage }
+  return { fileName, fileSize, pageCount, activePage, zoom, busy, indexing, indexedCount, limited, error, documentId, pages, outline, dimensions, setHost, loadFile, goToPage, setZoom, fitWidth, trackPage }
 }

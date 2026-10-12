@@ -26,7 +26,7 @@ onMounted(refresh)
   <AccountShell>
     <span class="pf-kicker">YOUR PERSONAL SPACE</span><h1>Thư viện của bạn.</h1>
     <p>PDF, vị trí đọc, cuộc trò chuyện và kết quả AI được lưu riêng trong tài khoản. Mở lại tài liệu để tiếp tục từ nơi bạn dừng.</p>
-    <NuxtLink to="/workspace" class="pf-button mt-6">Mở workspace</NuxtLink>
+    <div class="mt-6 flex flex-wrap gap-3"><NuxtLink to="/workspace" class="pf-button">Mở workspace</NuxtLink><NuxtLink to="/explore" class="pf-button">Thư viện 3D / 360°</NuxtLink></div>
     <p v-if="error" role="alert" class="mt-6 text-sm text-rose-500">{{ error }} <button class="pf-link" @click="refresh">Thử lại</button></p>
     <p v-if="loading" role="status" class="pf-muted mt-8">Đang tải thư viện…</p>
     <div v-else-if="!items.length && !error" class="pf-card mt-8 text-center"><UIcon name="i-lucide-folder-heart" class="size-10 text-violet-500" /><h2 class="mt-4 font-semibold">Chưa có tài liệu</h2><p class="pf-muted mt-3 text-sm">Mở PDF trong workspace. PaperFlow sẽ tự lưu vào tài khoản của bạn.</p></div>

@@ -9,12 +9,20 @@ public class ReadingState
     [MaxLength(200)] public List<SavedMessage> Messages { get; set; } = [];
     [MaxLength(100)] public List<SavedAction> Actions { get; set; } = [];
     [MaxLength(200)] public List<SavedHighlight> Highlights { get; set; } = [];
+    [MaxLength(200)] public List<SavedBookmark> Bookmarks { get; set; } = [];
+}
+public class SavedBookmark
+{
+    [Required, MaxLength(64)] public string Id { get; set; } = "";
+    [Range(1, 2000)] public int Page { get; set; }
+    [Required, MaxLength(120)] public string Title { get; set; } = "";
 }
 public class SavedHighlight
 {
     [Required, MaxLength(64)] public string Id { get; set; } = "";
     [Range(1, 2000)] public int Page { get; set; }
     [Required, MaxLength(5000)] public string Text { get; set; } = "";
+    [MaxLength(2000)] public string Note { get; set; } = "";
     [Required, MinLength(1), MaxLength(200)] public List<HighlightRect> Rects { get; set; } = [];
 }
 public class HighlightRect

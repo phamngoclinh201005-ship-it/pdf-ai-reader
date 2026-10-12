@@ -64,7 +64,8 @@ public class LibraryController(AuthService auth, LibraryStore library, IConfigur
     {
         var user = await Current(ct);
         if (user is null) return Unauthorized();
-        if (state.Messages is null || state.Actions is null || state.Highlights is null ||
+        if (state.Messages is null || state.Actions is null || state.Highlights is null || state.Bookmarks is null ||
+            state.Bookmarks.Any(b => b is null || string.IsNullOrWhiteSpace(b.Title)) ||
             state.Highlights.Any(h => h is null || h.Text is null || h.Rects is null || h.Rects.Any(r => r is null ||
                 !double.IsFinite(r.X) || !double.IsFinite(r.Y) || !double.IsFinite(r.Width) || !double.IsFinite(r.Height) ||
                 r.X + r.Width > 1.000001 || r.Y + r.Height > 1.000001)) ||

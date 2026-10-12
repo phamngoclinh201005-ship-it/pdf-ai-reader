@@ -77,13 +77,21 @@ try
     var state = new ReadingState { Page = 2, Zoom = 1.5,
         Messages = [new() { Role = "user", Text = "Question" }, new() { Role = "assistant", Text = "Answer", Citations = [2] }],
         Actions = [new() { Mode = "translate", Source = "Source text", Result = "Translated text", Page = 2 }],
-        Highlights = [new() { Id = "test-highlight", Page = 2, Text = "Important text", Rects = [new() { X = .1, Y = .2, Width = .3, Height = .05 }] }]
+        Highlights = [new() { Id = "test-highlight", Page = 2, Text = "Important text", Note = "Personal scientific note", Rects = [new() { X = .1, Y = .2, Width = .3, Height = .05 }] }],
+        Bookmarks = [new() { Id = "bookmark-2", Page = 2, Title = "Methods" }]
     };
     Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", otherToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.NotFound, "Other account cannot overwrite state");
     Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.NoContent, "Member saves reading state");
     var detail = await (await Send(HttpMethod.Get, $"/api/library/{id}", ownerToken)).Content.ReadFromJsonAsync<LibraryDetail>();
     Check(detail!.State.Page == 2 && detail.State.Zoom == 1.5 && detail.State.Messages[1].Text == "Answer" && detail.State.Actions[0].Result == "Translated text", "Reading state round-trips");
     Check(detail.State.Highlights[0].Text == "Important text" && detail.State.Highlights[0].Rects[0].X == .1, "Highlights round-trip");
+    Check(detail.State.Highlights[0].Note == "Personal scientific note" && detail.State.Bookmarks[0].Title == "Methods", "Notes and bookmarks round-trip");
+    state.Bookmarks[0].Page = 0;
+    Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.BadRequest, "Invalid bookmark page rejected");
+    state.Bookmarks[0].Page = 2;
+    state.Highlights[0].Note = new string('x', 2001);
+    Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.BadRequest, "Oversized note rejected");
+    state.Highlights[0].Note = "Personal scientific note";
     state.Highlights[0].Rects[0].Width = 2;
     Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.BadRequest, "Invalid highlight coordinates rejected");
     Check((await (await Send(HttpMethod.Get, $"/api/library/{id}/file", ownerToken)).Content.ReadAsByteArrayAsync()).SequenceEqual(bytes), "PDF bytes restored exactly");

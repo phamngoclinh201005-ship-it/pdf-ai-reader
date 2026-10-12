@@ -64,7 +64,10 @@ public class LibraryController(AuthService auth, LibraryStore library, IConfigur
     {
         var user = await Current(ct);
         if (user is null) return Unauthorized();
-        if (state.Messages is null || state.Actions is null ||
+        if (state.Messages is null || state.Actions is null || state.Highlights is null ||
+            state.Highlights.Any(h => h is null || h.Text is null || h.Rects is null || h.Rects.Any(r => r is null ||
+                !double.IsFinite(r.X) || !double.IsFinite(r.Y) || !double.IsFinite(r.Width) || !double.IsFinite(r.Height) ||
+                r.X + r.Width > 1.000001 || r.Y + r.Height > 1.000001)) ||
             state.Messages.Any(x => x is null || x.Text is null || x.Citations is null || x.Citations.Any(n => n < 1 || n > 2000)) ||
             state.Actions.Any(x => x is null || x.Source is null || x.Result is null) ||
             state.Messages.Sum(x => (long)Encoding.UTF8.GetByteCount(x.Text)) + state.Actions.Sum(x => (long)Encoding.UTF8.GetByteCount(x.Source) + Encoding.UTF8.GetByteCount(x.Result)) > 8 * 1024 * 1024)

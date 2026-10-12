@@ -20,14 +20,14 @@ public class AuthStore
         Sessions = db.GetCollection<SessionRecord>("sessions");
         PasswordResets = db.GetCollection<EmailOtpRecord>("password_resets");
     }
-    public async Task EnsureIndexesAsync()
+    public async Task EnsureIndexesAsync(CancellationToken ct = default)
     {
-        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }));
-        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }));
-        await Users.Indexes.CreateOneAsync(new CreateIndexModel<UserRecord>(Builders<UserRecord>.IndexKeys.Ascending(x => x.Email), new CreateIndexOptions { Unique = true }));
-        await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }));
-        await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }));
-        await Sessions.Indexes.CreateOneAsync(new CreateIndexModel<SessionRecord>(Builders<SessionRecord>.IndexKeys.Ascending(x => x.TokenHash), new CreateIndexOptions { Unique = true }));
-        await Sessions.Indexes.CreateOneAsync(new CreateIndexModel<SessionRecord>(Builders<SessionRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }));
+        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }), cancellationToken: ct);
+        await PasswordResets.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }), cancellationToken: ct);
+        await Users.Indexes.CreateOneAsync(new CreateIndexModel<UserRecord>(Builders<UserRecord>.IndexKeys.Ascending(x => x.Email), new CreateIndexOptions { Unique = true }), cancellationToken: ct);
+        await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.UserId), new CreateIndexOptions { Unique = true }), cancellationToken: ct);
+        await Otps.Indexes.CreateOneAsync(new CreateIndexModel<EmailOtpRecord>(Builders<EmailOtpRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }), cancellationToken: ct);
+        await Sessions.Indexes.CreateOneAsync(new CreateIndexModel<SessionRecord>(Builders<SessionRecord>.IndexKeys.Ascending(x => x.TokenHash), new CreateIndexOptions { Unique = true }), cancellationToken: ct);
+        await Sessions.Indexes.CreateOneAsync(new CreateIndexModel<SessionRecord>(Builders<SessionRecord>.IndexKeys.Ascending(x => x.ExpiresAt), new CreateIndexOptions { ExpireAfter = TimeSpan.Zero }), cancellationToken: ct);
     }
 }

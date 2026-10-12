@@ -9,7 +9,8 @@
     "start": "node scripts/start.mjs",
     "typecheck": "nuxt typecheck",
     "test": "node --test tests/*.test.mjs",
-    "test:smoke": "node tests/api-smoke.mjs"
+    "test:smoke": "node tests/api-smoke.mjs",
+    "test:ai": "node tests/ai-api-smoke.mjs"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.2",

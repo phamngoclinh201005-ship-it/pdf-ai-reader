@@ -11,6 +11,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
+    backendApiBase: process.env.NUXT_BACKEND_API_BASE || 'https://paperflow-api-reif.onrender.com',
+    googleTranslationEnabled: false,
+    googleTranslationApiKey: '',
     geminiApiKey: process.env.NUXT_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '',
     geminiModel: process.env.NUXT_GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     public: {
@@ -26,13 +29,13 @@ export default defineNuxtConfig({
   },
 
   app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
+    pageTransition: false,
     head: {
       title: 'PaperFlow — Đọc PDF cùng AI',
       link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
     },
   },
-  experimental: { viewTransition: true },
+  experimental: { viewTransition: false },
   colorMode: { preference: 'dark', fallback: 'dark', classSuffix: '' },
   icon: { serverBundle: { collections: ['lucide'] } },
 });

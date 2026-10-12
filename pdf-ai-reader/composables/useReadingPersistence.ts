@@ -1,4 +1,4 @@
-import type { SavedAction, SavedMessage, ReadingState } from '~/types/library'
+import type { SavedAction, SavedMessage, SavedHighlight, ReadingState } from '~/types/library'
 
 export function useReadingPersistence(options: {
   page: Ref<number>; zoom: Ref<number>; count: Ref<number>; load: (file: File) => Promise<void>;
@@ -11,6 +11,7 @@ export function useReadingPersistence(options: {
   const router = useRouter()
   const messages = ref<SavedMessage[]>([])
   const actions = ref<SavedAction[]>([])
+  const highlights = ref<SavedHighlight[]>([])
   const id = ref('')
   const restoring = ref(false)
   const status = ref('')
@@ -22,7 +23,7 @@ export function useReadingPersistence(options: {
   let queue: Promise<void> = Promise.resolve()
   let disposed = false
   function snapshot(): ReadingState {
-    return { page: options.page.value, zoom: options.zoom.value, messages: messages.value.map(m => ({ ...m, citations: m.citations || [] })), actions: actions.value.map(a => ({ ...a })) }
+    return { highlights: highlights.value.map(h => ({ ...h, rects: h.rects.map(r => ({ ...r })) })), page: options.page.value, zoom: options.zoom.value, messages: messages.value.map(m => ({ ...m, citations: m.citations || [] })), actions: actions.value.map(a => ({ ...a })) }
   }
   async function save() {
     if (!user.value || !id.value || restoring.value || disposed) return
@@ -56,7 +57,7 @@ export function useReadingPersistence(options: {
   }
   function prepare(selected: File) {
     if (id.value) void save()
-    ++version; clearTimeout(timer); timer = undefined; id.value = ''; file = selected; messages.value = []; actions.value = []
+    ++version; clearTimeout(timer); timer = undefined; id.value = ''; file = selected; messages.value = []; actions.value = []; highlights.value = []
     restoring.value = false; saving.value = false
     status.value = ''; error.value = ''
   }
@@ -78,7 +79,7 @@ export function useReadingPersistence(options: {
       if (!options.count.value || current !== version || disposed) return
       await nextTick()
       id.value = detail.id
-      messages.value = detail.state.messages || []; actions.value = detail.state.actions || []
+      messages.value = detail.state.messages || []; actions.value = detail.state.actions || []; highlights.value = detail.state.highlights || []
       options.setZoom(detail.state.zoom)
       await nextTick()
       options.navigate(Math.min(detail.state.page, options.count.value))
@@ -87,7 +88,7 @@ export function useReadingPersistence(options: {
     } catch (e: any) { if (current === version && !disposed) { error.value = e?.data?.message || 'Không khôi phục được tài liệu. Hãy mở lại từ My Library.'; status.value = '' } }
     finally { if (current === version && !disposed) { await nextTick(); restoring.value = false } }
   }
-  watch([options.page, options.zoom, messages, actions], () => {
+  watch([options.page, options.zoom, messages, actions, highlights], () => {
     if (!user.value || !id.value || restoring.value) return
     clearTimeout(timer); status.value = 'Đang lưu…'
     timer = setTimeout(() => { timer = undefined; void save() }, 250)
@@ -111,5 +112,5 @@ export function useReadingPersistence(options: {
   }
   onMounted(() => window.addEventListener('pagehide', flush))
   onBeforeUnmount(() => { flush(); disposed = true; ++version; clearTimeout(timer); window.removeEventListener('pagehide', flush) })
-  return { messages, actions, id, saving, restoring, status, error, prepare, opened, sync }
+  return { messages, actions, highlights, id, saving, restoring, status, error, prepare, opened, sync, restore }
 }

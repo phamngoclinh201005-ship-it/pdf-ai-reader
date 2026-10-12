@@ -12,10 +12,10 @@ public class LibraryStore(IConfiguration config)
     private IMongoCollection<LibraryDocument> Documents => database.GetCollection<LibraryDocument>("library_documents");
     private IMongoCollection<LibraryChunk> Chunks => database.GetCollection<LibraryChunk>("library_chunks");
 
-    public async Task EnsureIndexesAsync()
+    public async Task EnsureIndexesAsync(CancellationToken ct = default)
     {
-        await Documents.Indexes.CreateOneAsync(new CreateIndexModel<LibraryDocument>(Builders<LibraryDocument>.IndexKeys.Ascending(x => x.OwnerId).Descending(x => x.UpdatedAt)));
-        await Chunks.Indexes.CreateOneAsync(new CreateIndexModel<LibraryChunk>(Builders<LibraryChunk>.IndexKeys.Ascending(x => x.DocumentId).Ascending(x => x.Index), new CreateIndexOptions { Unique = true }));
+        await Documents.Indexes.CreateOneAsync(new CreateIndexModel<LibraryDocument>(Builders<LibraryDocument>.IndexKeys.Ascending(x => x.OwnerId).Descending(x => x.UpdatedAt)), cancellationToken: ct);
+        await Chunks.Indexes.CreateOneAsync(new CreateIndexModel<LibraryChunk>(Builders<LibraryChunk>.IndexKeys.Ascending(x => x.DocumentId).Ascending(x => x.Index), new CreateIndexOptions { Unique = true }), cancellationToken: ct);
     }
 
     public async Task<List<LibraryItem>> ListAsync(ObjectId owner, CancellationToken ct) =>

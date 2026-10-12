@@ -1,19 +1,25 @@
 <script setup lang="ts">
 import type { DocumentPage } from '~/types/ai'
 import type { SavedMessage } from '~/types/library'
-const { askPdf } = usePdfChat()
+const { askPdf, clearCache } = usePdfChat()
 const props = defineProps<{ pages: DocumentPage[]; fileName: string; documentId: number; indexing: boolean; limited: boolean; selection: string }>()
 const emit = defineEmits<{ close: []; navigate: [page: number]; clearSelection: []; requestSave: [] }>()
 const messages = defineModel<SavedMessage[]>('messages', { default: () => [] })
 const question = ref('')
 const pending = ref(false)
 const error = ref('')
+const retryAt = ref(0)
+const now = ref(Date.now())
+let retryTimer: ReturnType<typeof setInterval> | undefined
+onMounted(() => { retryTimer = setInterval(() => { now.value = Date.now() }, 1000) })
+onBeforeUnmount(() => clearInterval(retryTimer))
 const thread = ref<HTMLElement | null>(null)
 let controller: AbortController | undefined
 let version = 0
-const ready = computed(() => !!props.pages.some(p => p.text.trim()) && !props.indexing)
+const ready = computed(() => now.value >= retryAt.value && !!props.pages.some(p => p.text.trim()) && !props.indexing)
 const prompts = ['Tóm tắt các ý chính của tài liệu', 'Giải thích các khái niệm quan trọng', 'Kết luận và điểm cần lưu ý là gì?']
 function reset() {
+  clearCache()
   ++version
   controller?.abort()
   messages.value = []
@@ -46,6 +52,8 @@ async function send(value = question.value) {
     messages.value.push({ role: 'assistant', text: response.result, citations })
   } catch (err: any) {
     if (id === version) {
+      const data = err?.data?.data || err?.data || {}
+      retryAt.value = Date.now() + (Number(data.retryAfter) || 0) * 1000
       messages.value.pop()
       question.value = text
       error.value = err?.data?.data?.message || err?.data?.message || err?.message || 'Không thể gửi câu hỏi. Vui lòng thử lại.'
@@ -64,7 +72,7 @@ onBeforeUnmount(() => { ++version; controller?.abort() })
   <section class="panel flex h-full min-h-0 flex-col border-l" aria-label="Chat với PDF">
     <header class="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-5 dark:border-slate-800">
       <div class="flex items-center gap-3"><div class="flex size-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"><UIcon name="i-lucide-sparkles" class="size-5" /></div><div><h2 class="text-sm font-semibold">Trợ lý AI</h2><p class="text-[11px] text-slate-500">Powered by Gemini</p></div></div>
-      <div class="flex"><UButton icon="i-lucide-save" color="gray" variant="ghost" aria-label="Save Chat History" @click="emit('requestSave')" /><UButton icon="i-lucide-rotate-ccw" color="gray" variant="ghost" aria-label="Xóa cuộc trò chuyện" :disabled="!messages.length || pending" @click="reset" /><UButton icon="i-lucide-x" color="gray" variant="ghost" aria-label="Đóng trợ lý AI" @click="emit('close')" /></div>
+      <div class="flex"><UButton icon="i-lucide-save" color="gray" variant="ghost" aria-label="Save Chat History" @click="emit('requestSave')" title="Save Chat History" /><UButton icon="i-lucide-rotate-ccw" color="gray" variant="ghost" aria-label="Xóa cuộc trò chuyện" :disabled="!messages.length || pending" @click="reset" title="Xóa cuộc trò chuyện" /><UButton icon="i-lucide-x" color="gray" variant="ghost" aria-label="Đóng trợ lý AI" @click="emit('close')" title="Đóng trợ lý AI" /></div>
     </header>
     <div class="border-b border-slate-100 px-5 py-3 dark:border-slate-800"><div class="flex items-center gap-2 text-xs text-slate-500"><span class="size-1.5 rounded-full" :class="ready ? 'bg-emerald-500' : 'bg-slate-400'" /><span class="truncate">{{ indexing ? 'Đang đọc nội dung tài liệu…' : fileName || 'Chưa có tài liệu' }}</span></div><p v-if="limited" class="mt-2 text-xs text-amber-600 dark:text-amber-400">Chat chỉ dùng phần văn bản trong giới hạn 500.000 ký tự.</p></div>
     <div ref="thread" class="min-h-0 flex-1 overflow-y-auto px-5 py-6" aria-live="polite">
@@ -79,9 +87,9 @@ onBeforeUnmount(() => { ++version; controller?.abort() })
       <div v-if="pending" class="mt-5 flex items-center gap-2 text-xs text-violet-500"><UIcon name="i-lucide-loader-circle" class="size-4 animate-spin" />Đang tìm câu trả lời trong tài liệu…</div>
     </div>
     <footer class="shrink-0 border-t border-slate-200 p-4 dark:border-slate-800">
-      <div v-if="selection" class="mb-3 rounded-lg bg-violet-50 p-2.5 dark:bg-violet-500/10"><div class="flex items-center justify-between text-[11px] font-medium text-violet-500"><span>Đoạn văn đang chọn</span><button aria-label="Bỏ đoạn chọn khỏi câu hỏi" @click="emit('clearSelection')"><UIcon name="i-lucide-x" /></button></div><p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ selection }}</p></div>
+      <div v-if="selection" class="mb-3 rounded-lg bg-violet-50 p-2.5 dark:bg-violet-500/10"><div class="flex items-center justify-between text-[11px] font-medium text-violet-500"><span>Đoạn văn đang chọn</span><button aria-label="Bỏ đoạn chọn khỏi câu hỏi" @click="emit('clearSelection')" title="Bỏ đoạn chọn khỏi câu hỏi"><UIcon name="i-lucide-x" /></button></div><p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ selection }}</p></div>
       <p v-if="error" role="alert" class="mb-3 text-xs text-red-500">{{ error }}</p>
-      <form class="rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-900" @submit.prevent="send()"><textarea v-model="question" rows="2" maxlength="4000" aria-label="Câu hỏi về PDF" :disabled="!ready" placeholder="Hỏi về tài liệu của bạn…" class="w-full resize-none border-0 bg-transparent p-2 text-sm outline-none focus:ring-0 disabled:opacity-50" @keydown="onKey" /><div class="flex items-center justify-between px-1"><span class="text-[10px] text-slate-400">Enter để gửi · Shift + Enter xuống dòng</span><UButton type="submit" icon="i-lucide-arrow-up" size="xs" :loading="pending" :disabled="!ready || !question.trim()" aria-label="Gửi câu hỏi" /></div></form>
+      <form class="rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-900" @submit.prevent="send()"><textarea v-model="question" rows="2" maxlength="4000" aria-label="Câu hỏi về PDF" :disabled="!ready" placeholder="Hỏi về tài liệu của bạn…" class="w-full resize-none border-0 bg-transparent p-2 text-sm outline-none focus:ring-0 disabled:opacity-50" @keydown="onKey" /><div class="flex items-center justify-between px-1"><span class="text-[10px] text-slate-400">Enter để gửi · Shift + Enter xuống dòng</span><UButton type="submit" icon="i-lucide-arrow-up" size="xs" :loading="pending" :disabled="!ready || !question.trim()" aria-label="Gửi câu hỏi" title="Gửi câu hỏi" /></div></form>
       <p class="mt-2 text-center text-[10px] text-slate-400">AI có thể nhầm. Luôn đối chiếu tài liệu gốc.</p>
     </footer>
   </section>

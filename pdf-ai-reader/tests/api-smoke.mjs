@@ -58,10 +58,12 @@ try {
   })
   assert.equal(oversized.status, 413)
   let limited = false
+  let aiCookie = ''
   for (let i = 0; i < 32; i++) {
     const response = await fetch(origin + '/api/translate', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `192.0.2.${i + 1}` }, body: '{}',
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': `192.0.2.${i + 1}`, ...(aiCookie ? { Cookie: aiCookie } : {}) }, body: '{}',
     })
+    if (!aiCookie && response.headers.get('set-cookie')) aiCookie = response.headers.get('set-cookie').split(';')[0]
     if (response.status === 429) {
       assert.ok(response.headers.get('retry-after'))
       limited = true

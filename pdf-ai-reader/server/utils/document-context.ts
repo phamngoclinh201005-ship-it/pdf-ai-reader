@@ -1,6 +1,6 @@
 import type { DocumentPage } from '../../types/ai'
 export type { DocumentPage } from '../../types/ai'
-export function selectContext(pages: DocumentPage[], question: string, selection = '', limit = 45000) {
+export function selectContext(pages: DocumentPage[], question: string, selection = '', limit = 45000, includeDocuments = false) {
   const terms = [...new Set(question.toLocaleLowerCase().match(/[\p{L}\p{N}]{3,}/gu) || [])]
   const ranked = pages.map((page, index) => {
     const lower = page.text.toLocaleLowerCase()
@@ -18,5 +18,5 @@ export function selectContext(pages: DocumentPage[], question: string, selection
     remaining -= text.length + 30
   }
   chosen.sort((a, b) => a.page - b.page)
-  return { text: chosen.map(p => `[Trang ${p.page}]\n${p.text}`).join('\n\n'), pages: chosen.map(p => p.page) }
+  return { text: chosen.map(p => `[Trang ${p.page}]\n${p.text}`).join('\n\n'), pages: chosen.map(p => p.page), ...(includeDocuments ? { documents: chosen } : {}) }
 }

@@ -102,12 +102,22 @@ var app = builder.Build();
 // Middleware
 app.UseMiddleware<AiExceptionMiddleware>();
 
-await app.Services
-    .GetRequiredService<AuthStore>()
-    .EnsureIndexesAsync();
-
+app.Logger.LogInformation("Initializing MongoDB authentication and library indexes before listening.");
+using (var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(45)))
+{
+    try
+    {
+        await app.Services.GetRequiredService<AuthStore>().EnsureIndexesAsync(startupTimeout.Token);
+        await app.Services.GetRequiredService<LibraryStore>().EnsureIndexesAsync(startupTimeout.Token);
+        app.Logger.LogInformation("MongoDB indexes initialized successfully.");
+    }
+    catch (Exception error)
+    {
+        app.Logger.LogCritical("Database startup failed ({ErrorType}). Check MongoDB credentials, Atlas network access and DNS. No connection string is logged.", error.GetType().FullName);
+        throw new InvalidOperationException("Database initialization failed. See startup diagnostics above.");
+    }
+}
 app.UseCors("NuxtFrontend");
-await app.Services.GetRequiredService<LibraryStore>().EnsureIndexesAsync();
 
 // Origin protection
 app.Use(async (context, next) =>

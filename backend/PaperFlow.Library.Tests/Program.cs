@@ -76,12 +76,16 @@ try
     Check((await Send(HttpMethod.Delete, $"/api/library/{id}", otherToken)).StatusCode == HttpStatusCode.NotFound, "Other account cannot delete");
     var state = new ReadingState { Page = 2, Zoom = 1.5,
         Messages = [new() { Role = "user", Text = "Question" }, new() { Role = "assistant", Text = "Answer", Citations = [2] }],
-        Actions = [new() { Mode = "translate", Source = "Source text", Result = "Translated text", Page = 2 }]
+        Actions = [new() { Mode = "translate", Source = "Source text", Result = "Translated text", Page = 2 }],
+        Highlights = [new() { Id = "test-highlight", Page = 2, Text = "Important text", Rects = [new() { X = .1, Y = .2, Width = .3, Height = .05 }] }]
     };
     Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", otherToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.NotFound, "Other account cannot overwrite state");
     Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.NoContent, "Member saves reading state");
     var detail = await (await Send(HttpMethod.Get, $"/api/library/{id}", ownerToken)).Content.ReadFromJsonAsync<LibraryDetail>();
     Check(detail!.State.Page == 2 && detail.State.Zoom == 1.5 && detail.State.Messages[1].Text == "Answer" && detail.State.Actions[0].Result == "Translated text", "Reading state round-trips");
+    Check(detail.State.Highlights[0].Text == "Important text" && detail.State.Highlights[0].Rects[0].X == .1, "Highlights round-trip");
+    state.Highlights[0].Rects[0].Width = 2;
+    Check((await Send(HttpMethod.Put, $"/api/library/{id}/state", ownerToken, JsonContent.Create(state))).StatusCode == HttpStatusCode.BadRequest, "Invalid highlight coordinates rejected");
     Check((await (await Send(HttpMethod.Get, $"/api/library/{id}/file", ownerToken)).Content.ReadAsByteArrayAsync()).SequenceEqual(bytes), "PDF bytes restored exactly");
     var listed = await (await Send(HttpMethod.Get, "/api/library", ownerToken)).Content.ReadFromJsonAsync<List<LibraryItem>>();
     Check(listed!.Count == 1 && listed[0].Page == 2, "Library lists progress");

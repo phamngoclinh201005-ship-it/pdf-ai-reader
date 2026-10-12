@@ -25,7 +25,10 @@ export function useTextSpeech() {
       if (index >= chunks.length) { speaking.value = false; paused.value = false; return }
       const utterance = new SpeechSynthesisUtterance(chunks[index++]!)
       utterance.lang = language.value; utterance.rate = rate.value
-      const voice = window.speechSynthesis.getVoices().find(v => v.lang.toLowerCase() === language.value.toLowerCase())
+      const voices = window.speechSynthesis.getVoices()
+      const requestedLanguage = language.value.toLowerCase()
+      const voice = voices.find(v => v.lang.toLowerCase() === requestedLanguage)
+        || voices.find(v => v.lang.toLowerCase().split('-')[0] === requestedLanguage.split('-')[0])
       if (voice) utterance.voice = voice
       utterance.onend = next
       utterance.onerror = () => {

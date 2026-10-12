@@ -14,7 +14,8 @@ public class AiExceptionMiddleware(RequestDelegate next, ILogger<AiExceptionMidd
             logger.LogError("Request failed: {Path}; error type: {ErrorType}; trace ID: {TraceId}; stack: {StackTrace}",
                 context.Request.Path, exception.GetType().FullName, context.TraceIdentifier, exception.StackTrace);
             if (context.Response.HasStarted) throw;
-            context.Response.StatusCode = exception is MongoDB.Driver.MongoException or TimeoutException ? 503
+            context.Response.StatusCode = exception is MongoDB.Driver.MongoException ? 503
+                : exception is TimeoutException ? 504
                 : exception is HttpRequestException ? 502 : 500;
             await context.Response.WriteAsJsonAsync(new
             {

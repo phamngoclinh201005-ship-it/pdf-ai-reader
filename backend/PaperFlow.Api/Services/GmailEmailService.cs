@@ -80,7 +80,7 @@ public class GmailEmailService(IConfiguration config, ILogger<GmailEmailService>
             logger?.LogInformation("Gmail SMTP accepted an authentication email for delivery.");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (Exception ex) when (ex is MailKit.CommandException or MailKit.ProtocolException or MailKit.Security.AuthenticationException or System.IO.IOException or System.Net.Sockets.SocketException or OperationCanceledException or System.Security.Authentication.AuthenticationException)
+        catch (Exception ex) when (ex is MailKit.CommandException or MailKit.ProtocolException or MailKit.Security.AuthenticationException or System.IO.IOException or System.Net.Sockets.SocketException or OperationCanceledException or TimeoutException or System.Security.Authentication.AuthenticationException)
         {
             logger?.LogWarning("Gmail SMTP delivery failed. Error type: {ErrorType}; SMTP status: {SmtpStatus}",
                 ex.GetType().Name, ex is SmtpCommandException smtpError ? smtpError.StatusCode.ToString() : "unavailable");

@@ -23,6 +23,21 @@ void Check(bool condition, string label) { if (!condition) throw new Exception(l
 const string password = "StrongTestPassword123!";
 try
 {
+    var brevoConfig = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> {
+        ["Brevo:ApiKey"] = "fake-test-key", ["Brevo:SenderEmail"] = "sender@example.invalid"
+    }).Build();
+    var httpMail = new FakeBrevoHttp();
+    var brevo = new BrevoEmailService(new HttpClient(httpMail), brevoConfig);
+    await brevo.SendOtpAsync("recipient@example.invalid", "123456", default);
+    Check(httpMail.Body.Contains("123456") && httpMail.Body.Contains("textContent"), "Brevo request carries OTP text");
+    await brevo.SendPasswordResetAsync("recipient@example.invalid", "654321", default);
+    Check(httpMail.Body.Contains("654321"), "Brevo reset delivery");
+    foreach (var status in new[] { 400, 401, 429, 500 })
+    {
+        httpMail.Status = status;
+        try { await brevo.SendOtpAsync("recipient@example.invalid", "123456", default); throw new Exception("Provider rejection must fail"); }
+        catch (InvalidOperationException) { }
+    }
     await store.EnsureIndexesAsync();
     foreach (var setting in new[] { "Auth:OtpSecret", "Smtp:Username", "Smtp:Password" })
     {
@@ -148,4 +163,17 @@ sealed class FakeMail(IConfiguration config) : IAuthEmailService
         Code = code; Sends++; return Task.CompletedTask;
     }
     public Task SendPasswordResetAsync(string email, string code, CancellationToken ct) => SendOtpAsync(email, code, ct);
+}
+
+sealed class FakeBrevoHttp : HttpMessageHandler
+{
+    public int Status { get; set; } = 201;
+    public string Body { get; private set; } = "";
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        if (request.RequestUri?.AbsoluteUri != "https://api.brevo.com/v3/smtp/email" || !request.Headers.Contains("api-key"))
+            throw new Exception("Invalid Brevo endpoint or authentication");
+        Body = await request.Content!.ReadAsStringAsync(ct);
+        return new HttpResponseMessage((System.Net.HttpStatusCode)Status) { Content = new StringContent("{}") };
+    }
 }

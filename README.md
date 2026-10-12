@@ -1,3 +1,5 @@
+> Email production now uses Brevo HTTPS API by default. Configure it using [Brevo setup](docs/brevo-email.md).
+
 # PaperFlow workspace
 
 Ứng dụng đọc PDF và trợ lý AI, gồm frontend Nuxt 3 và API ASP.NET Core (.NET 10).

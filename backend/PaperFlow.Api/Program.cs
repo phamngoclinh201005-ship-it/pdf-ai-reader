@@ -24,8 +24,11 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordResetService>();
 builder.Services.AddSingleton<LibraryStore>();
 
-// Gmail SMTP
-builder.Services.AddScoped<IAuthEmailService, GmailEmailService>();
+// HTTPS delivery works on Render Free; SMTP remains optional for local use.
+if (string.Equals(builder.Configuration["Email:Provider"], "Gmail", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddScoped<IAuthEmailService, GmailEmailService>();
+else
+    builder.Services.AddHttpClient<IAuthEmailService, BrevoEmailService>(client => client.Timeout = TimeSpan.FromSeconds(20));
 
 // Frontend URL
 var frontendOrigin =

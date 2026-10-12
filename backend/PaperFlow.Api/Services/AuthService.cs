@@ -74,7 +74,13 @@ public class AuthService(AuthStore db, IConfiguration config, IAuthEmailService 
             var existing = await db.Otps.Find(x => x.UserId == user.Id).FirstOrDefaultAsync(ct);
             return existing is null ? GenericTiming() : new(existing.ExpiresAt, existing.CreatedAt.AddSeconds(60), DateTime.UtcNow);
         }
-        await mail.SendOtpAsync(user.Email, code, ct);
+        try { await mail.SendOtpAsync(user.Email, code, ct); }
+        catch
+        {
+            // A failed delivery must not leave an unsent OTP blocking retry for 60 seconds.
+            await db.Otps.DeleteOneAsync(x => x.UserId == user.Id && x.CodeHash == Crypto.OtpHash(OtpSecret, user.Email, code), CancellationToken.None);
+            throw;
+        }
         return new(now.AddMinutes(config.GetValue("Auth:OtpMinutes", 5)), now.AddSeconds(60), DateTime.UtcNow);
     }
 

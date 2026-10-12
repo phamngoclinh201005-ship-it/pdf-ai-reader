@@ -11,12 +11,17 @@ public class AiExceptionMiddleware(RequestDelegate next, ILogger<AiExceptionMidd
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "AI request failed");
+            logger.LogError("Request failed: {Path}; error type: {ErrorType}; trace ID: {TraceId}; stack: {StackTrace}",
+                context.Request.Path, exception.GetType().FullName, context.TraceIdentifier, exception.StackTrace);
             if (context.Response.HasStarted) throw;
-            context.Response.StatusCode = exception is HttpRequestException ? 502 : 500;
+            context.Response.StatusCode = exception is MongoDB.Driver.MongoException or TimeoutException ? 503
+                : exception is HttpRequestException ? 502 : 500;
             await context.Response.WriteAsJsonAsync(new
             {
-                message = "Không thể xử lý yêu cầu AI. Vui lòng thử lại."
+                message = context.Response.StatusCode == 503
+                    ? "Dịch vụ dữ liệu tạm thời không khả dụng. Vui lòng thử lại sau."
+                    : "Không thể xử lý yêu cầu. Vui lòng thử lại.",
+                traceId = context.TraceIdentifier
             });
         }
     }

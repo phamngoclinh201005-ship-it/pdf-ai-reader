@@ -32,7 +32,7 @@ public class AuthController(AuthService auth, IConfiguration config, IWebHostEnv
             return Accepted(new { message = "Nếu email hợp lệ, mã xác minh sẽ được gửi.", timing });
         }
         catch (AuthConfigurationException error) { return ConfigurationUnavailable(error); }
-        catch (InvalidOperationException) { return StatusCode(502, new { message = "Không gửi được email xác minh. Kiểm tra cấu hình Resend." }); }
+        catch (InvalidOperationException) { return StatusCode(502, new { message = "Không gửi được email xác minh. Kiểm tra cấu hình Gmail SMTP." }); }
     }
     [EnableRateLimiting("auth")]
     [HttpPost("resend-otp")]

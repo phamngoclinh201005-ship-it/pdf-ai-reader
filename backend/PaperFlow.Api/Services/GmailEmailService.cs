@@ -62,7 +62,9 @@ public class GmailEmailService(IConfiguration config, ILogger<GmailEmailService>
         var from = config["Smtp:From"] ?? username;
 
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("PaperFlow", from));
+        var sender = MailboxAddress.Parse(from);
+        sender.Name = "PaperFlow";
+        message.From.Add(sender);
         message.To.Add(MailboxAddress.Parse(to));
         message.Subject = subject;
         message.Body = new TextPart("plain") { Text = body };

@@ -1,4 +1,4 @@
-# PaperFlow Authentication v1 — ASP.NET Core 10 + MongoDB + Resend + Nuxt 3
+# PaperFlow Authentication v1 — ASP.NET Core 10 + MongoDB + Gmail SMTP + Nuxt 3
 
 ## Quên mật khẩu
 
@@ -9,7 +9,7 @@ Liên kết trên màn login mở `/forgot-password`. Ba bước riêng: nhập 
 - `POST /api/auth/reset-password`: `{ email, token, password }`; token gắn với email, được lưu dạng hash, hết hạn cùng yêu cầu OTP và chỉ dùng một lần.
 - Collection `password_resets` lưu hash HMAC của mã, tách khỏi `email_otps`, có unique index theo tài khoản và TTL theo hạn sử dụng.
 - Đổi mật khẩu thành công thu hồi tất cả session của tài khoản. Người dùng đăng nhập lại bằng mật khẩu mới.
-- Dùng cùng cấu hình `Resend` và `Auth:OtpSecret`. Với địa chỉ gửi thử Resend, giới hạn người nhận vẫn áp dụng như đăng ký.
+- Dùng cùng cấu hình `Gmail SMTP` và `Auth:OtpSecret`. Với địa chỉ gửi thử Gmail SMTP, giới hạn người nhận vẫn áp dụng như đăng ký.
 
 Bộ code đã được tích hợp vào PaperFlow. `/` hiện là landing public; `/reader` dùng trình đọc PDF ở Guest Mode. `/workspace`, `/library` và `/settings` yêu cầu đăng nhập. `/admin` kiểm tra quyền cả phía frontend và backend. Các route guard chạy trên server và trình duyệt; cookie phiên được chuyển tiếp khi Nuxt render server. Chi tiết: [Landing và Guest Mode](landing-and-guest-mode.md).
 
@@ -21,13 +21,13 @@ Phần dưới giữ hướng dẫn cấu hình của bộ module gốc. Không 
 dotnet run --project backend/PaperFlow.Auth.Tests
 ```
 
-Test sử dụng database tạm `PaperFlowAuthTests_<random>` và tự dọn sau khi chạy. Email được giả lập, không gửi qua Resend. Kiểm tra đăng ký, cooldown gửi lại, OTP sai/hết lượt/tái sử dụng, đăng nhập, hash session và thu hồi phiên khi đăng xuất. Nếu backend đang chạy và khóa file build, build test vào output riêng rồi chạy DLL.
+Test sử dụng database tạm `PaperFlowAuthTests_<random>` và tự dọn sau khi chạy. Email được giả lập, không gửi qua Gmail SMTP. Kiểm tra đăng ký, cooldown gửi lại, OTP sai/hết lượt/tái sử dụng, đăng nhập, hash session và thu hồi phiên khi đăng xuất. Nếu backend đang chạy và khóa file build, build test vào output riêng rồi chạy DLL.
 
 Chưa bao gồm lưu PDF riêng tư theo tài khoản. Các API AI hiện tại giữ nguyên luồng cũ, chưa áp dụng xác thực theo user.
 
 ## 1. Backend
 
-Nếu đã có `backend/PaperFlow.Api`, **sao lưu trước**, sau đó chép `Controllers/AuthController.cs`, `Models/AuthModels.cs`, `Security/Crypto.cs`, `Services/{AuthStore,AuthService,ResendEmailService}.cs` vào project. Chỉ thay `Program.cs` nếu bạn chưa tích hợp Gemini; nếu đã có, **gộp** các đăng ký service/middleware vào `Program.cs` hiện tại. Không ghi đè `.csproj`: chạy `dotnet add package MongoDB.Driver` trong backend để cài bản tương thích mới nhất.
+Nếu đã có `backend/PaperFlow.Api`, **sao lưu trước**, sau đó chép `Controllers/AuthController.cs`, `Models/AuthModels.cs`, `Security/Crypto.cs`, `Services/{AuthStore,AuthService,GmailEmailService}.cs` vào project. Chỉ thay `Program.cs` nếu bạn chưa tích hợp Gemini; nếu đã có, **gộp** các đăng ký service/middleware vào `Program.cs` hiện tại. Không ghi đè `.csproj`: chạy `dotnet add package MongoDB.Driver` trong backend để cài bản tương thích mới nhất.
 
 Nếu muốn thử độc lập, sử dụng nguyên thư mục `backend/PaperFlow.Api` trong ZIP.
 
@@ -35,7 +35,8 @@ Nếu muốn thử độc lập, sử dụng nguyên thư mục `backend/PaperFl
 cd backend\PaperFlow.Api
 dotnet restore
 dotnet user-secrets init
-dotnet user-secrets set "Resend:ApiKey" "re_xxxxxxxxx"
+dotnet user-secrets set "Smtp:Username" "YOUR_GMAIL@gmail.com"
+dotnet user-secrets set "Smtp:Password" "APP_PASSWORD_GOOGLE"
 dotnet user-secrets set "Auth:OtpSecret" "MOT_CHUOI_BI_MAT_NGAU_NHIEN_DAI_IT_NHAT_32_KY_TU"
 $env:ASPNETCORE_ENVIRONMENT = "Development"
 dotnet run --no-launch-profile --urls "http://localhost:5050"
@@ -50,7 +51,7 @@ $secret = [Convert]::ToHexString([System.Security.Cryptography.RandomNumberGener
 dotnet user-secrets set "Auth:OtpSecret" $secret
 ```
 
-**Resend**: cấu hình `Resend:From` trong `appsettings.json`. `onboarding@resend.dev` thường chỉ cho gửi đến email tài khoản Resend để thử nghiệm; muốn gửi OTP tới email của người dùng thật, cần xác minh domain gửi trên Resend và đổi `From` thành `PaperFlow <verify@tenmiencuaban.com>`.
+**Gmail SMTP**: d?ng `smtp.gmail.com`, c?ng 587 (STARTTLS) ho?c 465 (TLS). `Smtp:Username` l? Gmail g?i email, `Smtp:Password` l? App Password Google, kh?ng ph?i m?t kh?u ??ng nh?p Gmail. M?c ??nh ??a ch? From d?ng Username. Xem [h??ng d?n c?u h?nh](gmail-smtp.md).
 
 MongoDB Community Server cần đang chạy ở `mongodb://localhost:27017`. Cơ sở dữ liệu `PaperFlowDB` sẽ được tạo khi ghi dữ liệu lần đầu.
 
@@ -98,12 +99,12 @@ Chạy `npm run dev` từ gốc Nuxt và truy cập `/register`, `/verify-email`
 ## 5. Lưu ý bảo mật trước khi triển khai công khai
 
 - Bản này là **starter cho phát triển**, chưa phải hệ thống authentication được audit bảo mật. Giới hạn request theo IP mới là lớp bảo vệ cơ bản, chưa có rate limit theo email/thiết bị, chống bot và cơ chế khóa account đầy đủ.
-- OTP lưu bằng HMAC, hết hạn 5 phút, tối đa 5 lần sai, gửi lại tối thiểu 60 giây. Khi Resend thất bại, user có thể tồn tại ở trạng thái chưa xác minh và dùng gửi lại OTP sau.
+- OTP lưu bằng HMAC, hết hạn 5 phút, tối đa 5 lần sai, gửi lại tối thiểu 60 giây. Khi Gmail SMTP thất bại, user có thể tồn tại ở trạng thái chưa xác minh và dùng gửi lại OTP sau.
 - Cookie `HttpOnly`, `SameSite=Lax`, chỉ `Secure` khi dùng hostname không phải localhost. **Production phải bật HTTPS và cookie Secure bắt buộc**.
 - Dùng Origin check và CORS cho request có cookie; khi triển khai qua nhiều domain khác site cần thiết kế lại cookie/CSRF (ưu tiên reverse proxy cùng site hoặc Nuxt server proxy). Không đơn giản đổi `SameSite=None` mà không thêm CSRF token.
 - Phiên đăng nhập lưu hash token trong MongoDB, logout thu hồi session. MongoDB cần xác thực và bảo vệ kết nối khi deploy.
 - **Không có upload PDF riêng tư trong giai đoạn này**. Khi bổ sung upload, tất cả API phải lấy user từ session phía server và truy vấn `ownerId` từ database. Lưu PDF ngoài web root, đặt giới hạn kích thước và kiểm tra định dạng.
-- Không ghi mật khẩu, OTP, Resend key hay session token vào log, GitHub hoặc ảnh chụp màn hình.
+- Không ghi mật khẩu, OTP, SMTP App Password hay session token vào log, GitHub hoặc ảnh chụp màn hình.
 - `appsettings.json` có MongoDB local không mật khẩu chỉ để dev; production sử dụng secrets/env.
 - `register` cố ý trả phản hồi chung khi email đã tồn tại, tránh lộ danh sách tài khoản. Bản demo chưa có reset password, xác minh đổi email, xóa tài khoản, và email queue.
 

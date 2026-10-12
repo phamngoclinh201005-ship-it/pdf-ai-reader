@@ -24,12 +24,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordResetService>();
 builder.Services.AddSingleton<LibraryStore>();
 
-// Resend Email
-builder.Services.AddScoped<GmailEmailService>();
-builder.Services.AddHttpClient<ResendEmailService>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(15);
-});
+// Gmail SMTP
+builder.Services.AddScoped<IAuthEmailService, GmailEmailService>();
 
 // Frontend URL
 var frontendOrigin =

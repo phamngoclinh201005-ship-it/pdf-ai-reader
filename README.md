@@ -84,8 +84,8 @@ Trang chủ luôn hiển thị landing. `/reader` mở công khai cho Guest; `/w
 Session được lưu trong MongoDB và nhận diện bằng cookie HttpOnly.
 Backend cần MongoDB khi khởi động để tạo các index unique và TTL.
 
-Cấu hình `Resend:ApiKey` và `Auth:OtpSecret` (ít nhất 32 ký tự) bằng user secrets;
-`Resend:From` phải phù hợp domain/email được Resend cho phép gửi.
+Cấu hình `Smtp:Password` và `Auth:OtpSecret` (ít nhất 32 ký tự) bằng user secrets;
+`Smtp:Username` phải phù hợp domain/email được Gmail SMTP cho phép gửi.
 Xem [hướng dẫn authentication](docs/authentication.md) để cấu hình OTP, Admin và kiểm thử.
 
 ## Landing và Guest Mode

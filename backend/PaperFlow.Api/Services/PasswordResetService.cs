@@ -6,7 +6,7 @@ using PaperFlow.Api.Security;
 
 namespace PaperFlow.Api.Services;
 
-public class PasswordResetService(AuthStore db, IConfiguration config, ResendEmailService mail)
+public class PasswordResetService(AuthStore db, IConfiguration config, IAuthEmailService mail)
 {
     private string Secret => config["Auth:OtpSecret"] is { Length: >= 32 } value
         ? value : throw new AuthConfigurationException("Auth:OtpSecret must contain at least 32 characters");

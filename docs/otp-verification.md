@@ -10,7 +10,7 @@ npm.cmd run dev
 ```
 
 Đăng ký ở `/register`, sau đó nhập OTP tại `/verify-email`.
-Cấu hình Resend và OTP secret theo [authentication.md](authentication.md).
+Cấu hình Gmail SMTP và OTP secret theo [authentication.md](authentication.md).
 Không có mã OTP mẫu hoặc đường tắt xác minh trong giao diện.
 
 Để xem thiết kế trực tiếp, mở `/verify-email?email=your-email@example.com`.
@@ -71,4 +71,4 @@ dotnet .verification/otp-tests/PaperFlow.Auth.Tests.dll
 ```
 
 Test backend dùng MongoDB riêng tự dọn và email giả lập. Cần kiểm tra gửi email thật
-bằng Resend đã cấu hình trước khi sử dụng với người dùng thực tế.
+bằng Gmail SMTP đã cấu hình trước khi sử dụng với người dùng thực tế.

@@ -7,7 +7,7 @@ using PaperFlow.Api.Security;
 
 namespace PaperFlow.Api.Services;
 
-public class AuthService(AuthStore db, IConfiguration config, ResendEmailService mail)
+public class AuthService(AuthStore db, IConfiguration config, IAuthEmailService mail)
 {
     private string OtpSecret
     {

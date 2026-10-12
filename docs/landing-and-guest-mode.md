@@ -50,7 +50,7 @@ Chi tiết giới hạn, API và cấu hình Render: [library.md](library.md).
 - API .NET AI có policy 30 request/10 phút/IP và giới hạn body.
 - Rate limit auth áp dụng cho POST; kiểm tra session GET không tiêu hao bucket login/OTP.
 - CORS chỉ cho `Frontend:Origin`; auth POST có Origin check. Local nên dùng localhost ở cả FE và BE.
-- Gemini key và Resend key ở server, không đưa vào runtimeConfig.public.
+- Gemini key và Gmail SMTP key ở server, không đưa vào runtimeConfig.public.
 
 ## Thiết kế và file
 
@@ -89,7 +89,7 @@ npm.cmd run dev:backend
 ```
 
 Mở `http://localhost:3000`. Không cần BE để mở và render PDF; BE cần cho account,
-MongoDB/Resend cần cho registration/OTP. Nuxt Gemini cần key server để gọi AI thật.
+MongoDB/Gmail SMTP cần cho registration/OTP. Nuxt Gemini cần key server để gọi AI thật.
 
 ```powershell
 npm.cmd run typecheck

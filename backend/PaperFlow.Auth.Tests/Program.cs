@@ -1,6 +1,3 @@
-using System.Net;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using PaperFlow.Api.Contracts;
@@ -15,19 +12,19 @@ var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<str
     ["MongoDB:ConnectionString"] = mongoUri,
     ["MongoDB:DatabaseName"] = databaseName,
     ["Auth:OtpSecret"] = Crypto.NewToken(),
-    ["Resend:ApiKey"] = "fake-test-key",
-    ["Resend:From"] = "test@example.invalid"
+    ["Smtp:Username"] = "test@example.invalid",
+    ["Smtp:Password"] = "fake-test-password"
 }).Build();
 var client = new MongoClient(mongoUri);
 var store = new AuthStore(config);
-var transport = new FakeMail();
-var auth = new AuthService(store, config, new ResendEmailService(new HttpClient(transport), config));
+var transport = new FakeMail(config);
+var auth = new AuthService(store, config, transport);
 void Check(bool condition, string label) { if (!condition) throw new Exception(label); }
 const string password = "StrongTestPassword123!";
 try
 {
     await store.EnsureIndexesAsync();
-    foreach (var setting in new[] { "Auth:OtpSecret", "Resend:ApiKey", "Resend:From" })
+    foreach (var setting in new[] { "Auth:OtpSecret", "Smtp:Username", "Smtp:Password" })
     {
         var saved = config[setting];
         config[setting] = "";
@@ -71,7 +68,7 @@ try
     wrongCode = code == "000000" ? "000001" : "000000";
     for (var i = 0; i < 5; i++) Check(!await auth.VerifyAsync("locked@example.invalid", wrongCode, default), "Invalid attempt");
     Check(!await auth.VerifyAsync("locked@example.invalid", code, default), "OTP locked after five failures");
-    var reset = new PasswordResetService(store, config, new ResendEmailService(new HttpClient(transport), config));
+    var reset = new PasswordResetService(store, config, transport);
     var sendsBefore = transport.Sends;
     await reset.RequestAsync("unknown@example.invalid", default);
     await reset.RequestAsync("locked@example.invalid", default);
@@ -126,15 +123,14 @@ finally
     await client.DropDatabaseAsync(databaseName);
 }
 
-sealed class FakeMail : HttpMessageHandler
+sealed class FakeMail(IConfiguration config) : IAuthEmailService
 {
     public string Code { get; private set; } = "";
     public int Sends { get; private set; }
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    public void ValidateConfiguration() => new GmailEmailService(config).ValidateConfiguration();
+    public Task SendOtpAsync(string email, string code, CancellationToken ct)
     {
-        using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync(cancellationToken));
-        Code = Regex.Match(body.RootElement.GetProperty("text").GetString()!, @"\b\d{6}\b").Value;
-        Sends++;
-        return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("{}") };
+        ValidateConfiguration(); Code = code; Sends++; return Task.CompletedTask;
     }
+    public Task SendPasswordResetAsync(string email, string code, CancellationToken ct) => SendOtpAsync(email, code, ct);
 }
